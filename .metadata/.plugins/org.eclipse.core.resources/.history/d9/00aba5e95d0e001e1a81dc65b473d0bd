@@ -1,0 +1,13 @@
+package projects.dao;
+
+import projects.entity.Project;
+import provided.util.DaoBase;
+
+public class ProjectDao extends DaoBase{
+
+	public Project insertProject(Project project) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}
