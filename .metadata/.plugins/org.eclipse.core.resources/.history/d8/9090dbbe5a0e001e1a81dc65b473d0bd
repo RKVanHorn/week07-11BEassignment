@@ -1,7 +1,0 @@
-package projects.dao;
-
-import provided.util.DaoBase;
-
-public class ProjectDao extends DaoBase{
-
-}
