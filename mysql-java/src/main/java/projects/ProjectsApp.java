@@ -5,7 +5,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
 
+import projects.entity.Category;
+import projects.entity.Material;
 import projects.entity.Project;
+import projects.entity.Step;
 import projects.exception.DbException;
 import projects.service.ProjectService;
 
@@ -19,7 +22,13 @@ public class ProjectsApp {
 	private List<String> operations = List.of(
 			"1) Add a project",
 			"2) List projects",
-			"3) Select a project"
+			"3) Select a project",
+			"4) Update project details",
+			"5) Add a material to the selected project",
+			"6) Add a step to the selected project",
+			"7) Add a category to the selected project",
+			"8) Add a project category",
+			"9) Delete a project"
 			);
 	// @formatter:on
 
@@ -48,6 +57,24 @@ public class ProjectsApp {
 				case 3:
 					selectProject();
 					break;
+				case 4:
+					updateProjectDetails();
+					break;
+				case 5:
+					addMaterial();
+					break;
+				case 6:
+					addStep();
+					break;
+				case 7:
+					addCategoryToProject();
+					break;
+				case 8:
+					addCategoryToCategoryTable();
+					break;
+				case 9:
+					deleteProject();
+					break;
 				default:
 					System.out.println("\n" + selection + " is not a valid selection. Try again.");
 					break;
@@ -58,6 +85,128 @@ public class ProjectsApp {
 			}
 		}
 
+	}
+
+	private void deleteProject() {
+		listProjects();
+		Integer projectId = getIntInput("Enter the ID of the project to delete");
+		
+		if(Objects.nonNull(projectId)) {
+			projectService.deleteProject(projectId);
+			
+			System.out.println("You have deleted project " + projectId);
+			
+			if(Objects.nonNull(curProject) && curProject.getProjectId().equals(projectId)) {
+				curProject = null;
+			}
+		}
+		
+	}
+
+	private void addCategoryToCategoryTable() {
+		List<Category> categories = projectService.fetchCategories();
+		
+		categories.forEach(category -> System.out.println("   " + category.getCategoryName()));
+		
+		String category = getStringInput("Enter the name of a new category");
+		
+		if(Objects.nonNull(category)) {
+			projectService.addCategoryToCategoryTable(category);
+			
+			System.out.println("\nYou added " + category + " to the category table. Here is the current list of categories.");
+			categories = projectService.fetchCategories();
+			categories.forEach(cat -> System.out.println("   " + cat.getCategoryName()));
+		}
+		
+	}
+
+	private void addCategoryToProject() {
+		if(Objects.isNull(curProject)) {
+			System.out.println("\nPlease select a project first.");
+			return;
+		}
+		
+		List<Category> categories = projectService.fetchCategories();
+		
+		categories.forEach(category -> System.out.println("   " + category.getCategoryName()));
+		
+		String category = getStringInput("Enter the category to add");
+		
+		if(Objects.nonNull(category)) {
+			projectService.addCategoryToProject(curProject.getProjectId(), category);
+			curProject = projectService.fetchProjectById(curProject.getProjectId());
+		}
+	}
+
+	private void addStep() {
+		if(Objects.isNull(curProject)) {
+			System.out.println("\nPlease select a project first.");
+			return;
+		}
+		
+		String stepText = getStringInput("Enter the step text");
+		
+		if(Objects.nonNull(stepText)) {
+			Step step = new Step();
+			
+			step.setProjectId(curProject.getProjectId());
+			step.setStepText(stepText);
+			
+			projectService.addStep(step);
+			curProject = projectService.fetchProjectById(step.getProjectId());
+		}
+		
+	}
+
+	private void addMaterial() {
+		if(Objects.isNull(curProject)) {
+			System.out.println("\nPlease select a project first.");
+			return;
+		}
+		
+		String name = getStringInput("Enter the material name");
+		Integer number = getIntInput("Enter the number required");
+		BigDecimal cost = getDecimalInput("Enter the cost");
+		
+		Material material = new Material();
+		
+		material.setProjectId(curProject.getProjectId());
+		material.setMaterialName(name);
+		material.setNumRequired(number);
+		material.setCost(cost);
+		
+		projectService.addMaterial(material);
+		curProject = projectService.fetchProjectById(material.getProjectId());
+		
+	}
+
+	private void updateProjectDetails() {
+		if(Objects.isNull(curProject)) {
+			System.out.println("\nPlease select a project.");
+			return;
+		}
+		
+		String projectName = getStringInput("Enter the name of the project (" + curProject.getProjectName() + ")");
+		BigDecimal estimatedHours = getDecimalInput("Enter the estimated hours (" + curProject.getEstimatedHours() + ")");
+		BigDecimal actualHours = getDecimalInput("Enter the actual hours (" + curProject.getActualHours() + ")");
+		Integer difficulty = getIntInput("Enter the difficulty (1-5) (" + curProject.getDifficulty() + ")");
+		String notes = getStringInput("Enter the notes for the project (" + curProject.getNotes() + ")");
+		
+		Project project = new Project();
+		
+		project.setProjectId(curProject.getProjectId());
+		project.setProjectName(Objects.isNull(projectName) ? curProject.getProjectName() : projectName);
+		project.setEstimatedHours(Objects.isNull(estimatedHours) ? curProject.getEstimatedHours() : estimatedHours);
+		project.setActualHours(Objects.isNull(actualHours) ? curProject.getActualHours() : actualHours);
+		project.setDifficulty(Objects.isNull(difficulty) ? curProject.getDifficulty() : difficulty);
+		project.setNotes(Objects.isNull(notes) ? curProject.getNotes() : notes);
+		
+		projectService.modifyProjectDetails(project);
+		
+		curProject = projectService.fetchProjectById(curProject.getProjectId());
+				
+		
+		
 	}
 
 	private void selectProject() {

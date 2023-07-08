@@ -3,7 +3,11 @@ package projects.service;
 import java.util.List;
 import java.util.NoSuchElementException;
 import projects.dao.ProjectDao;
+import projects.entity.Category;
+import projects.entity.Material;
 import projects.entity.Project;
+import projects.entity.Step;
+import projects.exception.DbException;
 
 public class ProjectService {
 	
@@ -21,6 +25,44 @@ public class ProjectService {
 		return projectDao.fetchProjectById(projectId).orElseThrow(
 				()-> new NoSuchElementException(
 						"Project with project ID= " + projectId + " does not exist."));
+		
+	}
+
+	public void modifyProjectDetails(Project project) {
+		if(!projectDao.modifyProjectDetails(project)) {
+			throw new DbException("Project with ID = " + project.getProjectId() + " does not exist.");
+		}
+		
+	}
+
+	public void addMaterial(Material material) {
+		projectDao.addMaterialToProject(material);
+		
+	}
+
+	public void addStep(Step step) {
+		projectDao.addStepToProject(step);
+		
+	}
+
+	public List<Category> fetchCategories() {
+		return projectDao.fetchAllCategories();
+	}
+
+	public void addCategoryToProject(Integer projectId, String category) {
+		projectDao.addCategoryToProject(projectId, category);
+		
+	}
+
+	public void addCategoryToCategoryTable(String category) {
+		projectDao.addCategoryToCategoryTable(category);
+		
+	}
+
+	public void deleteProject(Integer projectId) {
+		if(!projectDao.deleteProject(projectId)) {
+			throw new DbException("Project with ID= " + projectId + " does not exist.");
+		}
 		
 	}
 
