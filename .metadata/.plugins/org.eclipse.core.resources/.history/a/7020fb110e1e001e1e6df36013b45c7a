@@ -1,0 +1,575 @@
+package projects;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Objects;
+import java.util.Scanner;
+
+import projects.entity.Category;
+import projects.entity.Material;
+import projects.entity.Project;
+import projects.entity.Step;
+import projects.exception.DbException;
+import projects.service.ProjectService;
+
+public class ProjectsApp {
+
+	private ProjectService projectService = new ProjectService();
+	private Scanner scanner = new Scanner(System.in);
+	private Project curProject;
+
+	// @formatter:off
+	private List<String> operations = List.of(
+			"1) Add a project",
+			"2) List projects",
+			"3) Select a project",
+			"4) Update project details",
+			"5) Add a material, step, or category to the selected project",
+			"6) Update a material or step in the selected project",
+			"7) Remove a material, step or category from the selected project",
+			"8) Add a new project category",
+			"9) Delete an entire project"
+			);
+	// @formatter:on
+
+	public static void main(String[] args) {
+
+		new ProjectsApp().processUserSelections();
+
+	}
+
+	private boolean processUserSelections() {
+		boolean done = false;
+
+		while (!done) {
+			try {
+				int selection = getUserSelection();
+				switch (selection) {
+				case -1:
+					done = exitMenu();
+					break;
+				case 1:
+					createProject();
+					break;
+				case 2:
+					listProjects();
+					break;
+				case 3:
+					selectProject();
+					break;
+				case 4:
+					updateProjectDetails();
+					break;
+				case 5:
+					showAddMenu();
+					break;
+				case 6:
+					showUpdateMenu();
+					break;
+				case 7:
+					showDeleteMenu();
+					break;
+				case 8:
+					addCategoryToCategoryTable();
+					break;
+				case 9:
+					deleteProject();
+					break;
+				default:
+					System.out.println("\n" + selection + " is not a valid selection. Try again.");
+					break;
+				}
+
+			} catch (Exception e) {
+				System.out.println("\nError: " + e + " Try again.");
+			}
+		}
+		return done;
+	}
+	
+	//all methods related to removing a material, step or category from a project
+
+	private void showDeleteMenu() {
+		if (Objects.isNull(curProject)) {
+			System.out.println("\nPlease select a project first.");
+			return;
+		}
+
+		boolean done = false;
+
+		while (!done) {
+			try {
+				int selection = getDeleteSelection();
+				switch (selection) {
+				case -1:
+					done = processUserSelections();
+					break;
+				case 1:
+					deleteMaterial();
+					break;
+				case 2:
+					deleteStep();
+					break;
+				case 3:
+					deleteCategory();
+				default:
+					System.out.println("\n" + selection + " is not a valid selection. Try again.");
+					break;
+
+				}
+			} catch (Exception e) {
+				System.out.println("\nError: " + e + " Try again.");
+			}
+		}
+		
+		
+	}
+	
+	private int getDeleteSelection() {
+		Integer input = getIntInput(
+				"\nPlease choose the number of the item you would like to remove from this project. \n1: Material \n2: Step \n3: Category\nPress Enter to go back. \nEnter your selection");
+		return Objects.isNull(input) ? -1 : input;
+	}
+
+	private void deleteCategory() {
+		if (Objects.isNull(curProject)) {
+			System.out.println("\nPlease select a project first.");
+			return;
+		}
+		List<Category> categories = projectService.fetchCategoriesInAProject(curProject.getProjectId());
+		
+		System.out.println("\nCategories for current project");
+		categories.forEach(category -> System.out.println("   " + category));
+		
+		String category = getStringInput("Enter the name of the category to remove from this project");
+		Integer projectId = curProject.getProjectId();
+		
+		if(Objects.nonNull(category)) {
+			projectService.deleteCategoryFromCurrentProject(projectId, category);
+			curProject = projectService.fetchProjectById(curProject.getProjectId());
+			System.out.println("\nYou have successfully removed Category " + category + ".\nChoose another item to remove or hit Enter to go back.");
+		}
+		
+	}
+
+	private void deleteStep() {
+		if (Objects.isNull(curProject)) {
+			System.out.println("\nPlease select a project first.");
+			return;
+		}
+		List<Step> steps = projectService.fetchSteps(curProject.getProjectId());
+		
+		System.out.println("\nSteps for current project");
+		steps.forEach(step -> System.out.println("   " + step));
+		
+		Integer stepId = getIntInput("Enter the ID of the step to remove");
+		
+		if(Objects.nonNull(stepId)) {
+			projectService.deleteStepFromCurrentProject(stepId);
+			curProject = projectService.fetchProjectById(curProject.getProjectId());
+			System.out.println("\nYou have successfully removed step " + stepId + ".\nChoose another item to remove or hit Enter to go back.");
+		}
+		
+	}
+
+	private void deleteMaterial() {
+		if (Objects.isNull(curProject)) {
+			System.out.println("\nPlease select a project first.");
+			return;
+		}
+		List<Material> materials = projectService.fetchMaterials(curProject.getProjectId());
+		
+		System.out.println("\nMaterials for current project");
+		materials.forEach(material -> System.out.println("   " + material));
+		
+		Integer materialId = getIntInput("Enter the ID of the material to remove");
+		
+		if(Objects.nonNull(materialId)) {
+			projectService.deleteMaterialFromCurrentProject(materialId);
+			curProject = projectService.fetchProjectById(curProject.getProjectId());
+			System.out.println("\nYou have successfully removed material " + materialId + ".\nChoose another item to remove or hit Enter to go back.");
+		}
+		
+	}
+
+	//all methods relating to updating a material or step
+
+	private void showUpdateMenu() {
+		if (Objects.isNull(curProject)) {
+			System.out.println("\nPlease select a project first.");
+			return;
+		}
+
+		boolean done = false;
+
+		while (!done) {
+			try {
+				int selection = getUpdateSelection();
+				switch (selection) {
+				case -1:
+					done = processUserSelections();
+					break;
+				case 1:
+					updateMaterial();
+					break;
+				case 2:
+					updateStep();
+					break;
+				default:
+					System.out.println("\n" + selection + " is not a valid selection. Try again.");
+					break;
+
+				}
+			} catch (Exception e) {
+				System.out.println("\nError: " + e + " Try again.");
+			}
+		}
+		
+	}
+
+	private void updateStep() {
+		if (Objects.isNull(curProject)) {
+			System.out.println("\nPlease select a project first.");
+			return;
+		}
+		List<Step> steps = projectService.fetchSteps(curProject.getProjectId());
+		
+		System.out.println("\nSteps for current project");
+		steps.forEach(step -> System.out.println("   " + step));
+		
+		Integer stepId = getIntInput("Enter the ID of the step to update");
+		
+		if(Objects.nonNull(stepId)) {
+			String stepText = getStringInput("Enter new step text");
+			
+			if(Objects.nonNull(stepText)) {
+				Step step = new Step();
+				
+				step.setStepId(stepId);
+				step.setStepText(stepText);
+				
+				projectService.updateStepInCurrentProject(step);
+				curProject = projectService.fetchProjectById(curProject.getProjectId());
+				System.out.println("\nYou have successfully updated a step.\nChoose another item to update or hit Enter to go back.");
+			}
+		}
+	}
+
+	private void updateMaterial() {
+		if (Objects.isNull(curProject)) {
+			System.out.println("\nPlease select a project first.");
+			return;
+		}
+		List<Material> materials = projectService.fetchMaterials(curProject.getProjectId());
+		
+		System.out.println("\nMaterials for current recipe");
+		materials.forEach(material -> System.out.println("   " + material));
+		
+		Integer materialId = getIntInput("Enter the ID of the material to update");
+		
+		if(Objects.nonNull(materialId)) {
+			String name = getStringInput("Enter the updated material name");
+			Integer number = getIntInput("Enter the updated number required");
+			BigDecimal cost = getDecimalInput("Enter the updated cost");
+
+			Material material = new Material();
+
+			material.setMaterialId(materialId);
+			material.setMaterialName(name);
+			material.setNumRequired(number); 
+			material.setCost(cost);
+			
+			projectService.updateMaterialInSelectedProject(material);
+			curProject = projectService.fetchProjectById(curProject.getProjectId());
+			System.out.println("\nYou have successfully updated a material.\nChoose another item to update or hit Enter to go back.");
+		}
+	}
+
+	private int getUpdateSelection() {
+		Integer input = getIntInput(
+				"\nPlease choose the number of the item you would like to update. \n1: Material \n2: Step \nPress Enter to go back. \nEnter your selection");
+		return Objects.isNull(input) ? -1 : input;
+	}
+
+	//All of the methods related to adding a material, step or category.
+	
+	private void showAddMenu() {
+		if (Objects.isNull(curProject)) {
+			System.out.println("\nPlease select a project first.");
+			return;
+		}
+
+		boolean done = false;
+
+		while (!done) {
+			try {
+				int selection = getAddSelection();
+				switch (selection) {
+				case -1:
+					done = processUserSelections();
+					break;
+				case 1:
+					addMaterial();
+					break;
+				case 2:
+					addStep();
+					break;
+				case 3:
+					addCategoryToProject();
+					break;
+				default:
+					System.out.println("\n" + selection + " is not a valid selection. Try again.");
+					break;
+
+				}
+			} catch (Exception e) {
+				System.out.println("\nError: " + e + " Try again.");
+			}
+		}
+
+	}
+
+	private int getAddSelection() {
+		Integer input = getIntInput(
+				"\nPlease choose the number of the item you would like to add. \n1: Material \n2: Step \n3: Category\nPress Enter to go back. \nEnter your selection");
+		return Objects.isNull(input) ? -1 : input;
+	}
+	
+	private void addCategoryToProject() {
+		if (Objects.isNull(curProject)) {
+			System.out.println("\nPlease select a project first.");
+			return;
+		}
+
+		List<Category> categories = projectService.fetchCategories();
+
+		categories.forEach(category -> System.out.println("   " + category.getCategoryName()));
+
+		String category = getStringInput("Enter the category to add");
+
+		if (Objects.nonNull(category)) {
+			projectService.addCategoryToProject(curProject.getProjectId(), category);
+			curProject = projectService.fetchProjectById(curProject.getProjectId());
+			System.out.println("\nYou have successfully added a category.\nChoose another addition or hit Enter to go back.");
+		}
+	}
+
+	private void addStep() {
+		if (Objects.isNull(curProject)) {
+			System.out.println("\nPlease select a project first.");
+			return;
+		}
+
+		String stepText = getStringInput("Enter the step text");
+
+		if (Objects.nonNull(stepText)) {
+			Step step = new Step();
+
+			step.setProjectId(curProject.getProjectId());
+			step.setStepText(stepText);
+
+			projectService.addStep(step);
+			curProject = projectService.fetchProjectById(step.getProjectId());
+			System.out.println("\nYou have successfully added a step.\nChoose another addition or hit Enter to go back.");
+		}
+
+	}
+
+	private void addMaterial() {
+		if (Objects.isNull(curProject)) {
+			System.out.println("\nPlease select a project first.");
+			return;
+		}
+
+		String name = getStringInput("Enter the material name");
+		Integer number = getIntInput("Enter the number required");
+		BigDecimal cost = getDecimalInput("Enter the cost");
+
+		Material material = new Material();
+
+		material.setProjectId(curProject.getProjectId());
+		material.setMaterialName(name);
+		material.setNumRequired(number);
+		material.setCost(cost);
+
+		projectService.addMaterial(material);
+		curProject = projectService.fetchProjectById(material.getProjectId());
+		System.out.println("\nYou have successfully added a material.\nChoose another addition or hit Enter to go back.");
+
+	}
+
+	//Method to delete a project
+	private void deleteProject() {
+		listProjects();
+		Integer projectId = getIntInput("Enter the ID of the project to delete");
+
+		if (Objects.nonNull(projectId)) {
+			projectService.deleteProject(projectId);
+
+			System.out.println("You have deleted project " + projectId);
+
+			if (Objects.nonNull(curProject) && curProject.getProjectId().equals(projectId)) {
+				curProject = null;
+			}
+		}
+
+	}
+
+	//Method to add a category to the category table
+	private void addCategoryToCategoryTable() {
+		List<Category> categories = projectService.fetchCategories();
+
+		categories.forEach(category -> System.out.println("   " + category.getCategoryName()));
+
+		String category = getStringInput("Enter the name of a new category");
+
+		if (Objects.nonNull(category)) {
+			projectService.addCategoryToCategoryTable(category);
+
+			System.out.println(
+					"\nYou added " + category + " to the category table. Here is the current list of categories.");
+			categories = projectService.fetchCategories();
+			categories.forEach(cat -> System.out.println("   " + cat.getCategoryName()));
+		}
+
+	}
+
+	//Method to update the project details (name, hours, difficulty, notes)
+
+	private void updateProjectDetails() {
+		if (Objects.isNull(curProject)) {
+			System.out.println("\nPlease select a project.");
+			return;
+		}
+
+		String projectName = getStringInput("Enter the name of the project (" + curProject.getProjectName() + ")");
+		BigDecimal estimatedHours = getDecimalInput(
+				"Enter the estimated hours (" + curProject.getEstimatedHours() + ")");
+		BigDecimal actualHours = getDecimalInput("Enter the actual hours (" + curProject.getActualHours() + ")");
+		Integer difficulty = getIntInput("Enter the difficulty (1-5) (" + curProject.getDifficulty() + ")");
+		String notes = getStringInput("Enter the notes for the project (" + curProject.getNotes() + ")");
+
+		Project project = new Project();
+
+		project.setProjectId(curProject.getProjectId());
+		project.setProjectName(Objects.isNull(projectName) ? curProject.getProjectName() : projectName);
+		project.setEstimatedHours(Objects.isNull(estimatedHours) ? curProject.getEstimatedHours() : estimatedHours);
+		project.setActualHours(Objects.isNull(actualHours) ? curProject.getActualHours() : actualHours);
+		project.setDifficulty(Objects.isNull(difficulty) ? curProject.getDifficulty() : difficulty);
+		project.setNotes(Objects.isNull(notes) ? curProject.getNotes() : notes);
+
+		projectService.modifyProjectDetails(project);
+
+		curProject = projectService.fetchProjectById(curProject.getProjectId());
+
+	}
+	
+	//method to select a project to work with
+
+	private void selectProject() {
+		List<Project> projects = listProjects();
+		Integer projectId = getIntInput("Enter a project ID to select a project");
+
+		curProject = null;
+
+		curProject = projectService.fetchProjectById(projectId);
+
+		if (Objects.isNull(curProject)) {
+			System.out.println("Invalid project ID selected.");
+		}
+
+	}
+
+	//method to list out all the projects
+	
+	private List<Project> listProjects() {
+		List<Project> projects = projectService.fetchAllProjects();
+		System.out.println("\nProjects: ");
+//		for (Project project : projects) {
+//			System.out.println("     " + project.getProjectId() + ": " + project.getProjectName());
+//		}
+		projects.forEach(
+				project -> System.out.println("   " + project.getProjectId() + ": " + project.getProjectName()));
+
+		return projects;
+
+	}
+
+	//method to create a project
+	
+	private void createProject() {
+		String projectName = getStringInput("Enter the project name");
+		BigDecimal estimatedHours = getDecimalInput("Enter the estimated hours");
+		BigDecimal actualHours = getDecimalInput("Enter the actual hours");
+		Integer difficulty = getIntInput("Enter the project difficulty (1-5)");
+		String notes = getStringInput("Enter the project notes");
+
+		Project project = new Project();
+
+		project.setProjectName(projectName);
+		project.setEstimatedHours(estimatedHours);
+		project.setActualHours(actualHours);
+		project.setDifficulty(difficulty);
+		project.setNotes(notes);
+
+		Project dbProject = projectService.addProject(project);
+		System.out.println("You have successfully created project: " + dbProject);
+
+	}
+
+	private BigDecimal getDecimalInput(String prompt) {
+		String input = getStringInput(prompt);
+		if (Objects.isNull(input)) {
+			return null;
+		}
+		try {
+			return new BigDecimal(input).setScale(2);
+		} catch (NumberFormatException e) {
+			throw new DbException(input + " is not a valid decimal number.");
+		}
+	}
+
+	private boolean exitMenu() {
+		System.out.println("\nExiting the menu.");
+		return true;
+	}
+
+	private int getUserSelection() {
+		printOperations();
+		Integer input = getIntInput("Enter a menu selection");
+		return Objects.isNull(input) ? -1 : input;
+	}
+
+	private void printOperations() {
+		System.out.println("\nThese are the available selections. \nPress the Enter key to quit:");
+		for (String operation : operations) {
+			System.out.println("   " + operation);
+		}
+
+		if (Objects.isNull(curProject)) {
+			System.out.println("\nYou are not working with a project");
+		} else {
+			System.out.println("\nYou are working with project: " + curProject);
+		}
+
+	}
+
+	private Integer getIntInput(String prompt) {
+		String input = getStringInput(prompt);
+		if (Objects.isNull(input)) {
+			return null;
+		}
+		try {
+			return Integer.valueOf(input);
+		} catch (NumberFormatException e) {
+			throw new DbException(input + " is not a valid number.");
+		}
+	}
+
+	private String getStringInput(String prompt) {
+		System.out.print(prompt + ": ");
+		String input = scanner.nextLine();
+		return input.isBlank() ? null : input.trim();
+	}
+
+}

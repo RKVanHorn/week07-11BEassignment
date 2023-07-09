@@ -66,4 +66,50 @@ public class ProjectService {
 		
 	}
 
+	public List<Material> fetchMaterials(Integer projectId) {
+		return projectDao.fetchProjectMaterials(projectId);
+	}
+
+	public void updateMaterialInSelectedProject(Material material) {
+		if(!projectDao.updateMaterialInSelectedProject(material)) {
+			throw new DbException("Material with ID= " + material.getMaterialId() + " does not exist.");
+		}
+	}
+
+	public List<Step> fetchSteps(Integer projectId) {
+		return projectDao.fetchProjectSteps(projectId);
+	}
+
+	public void updateStepInCurrentProject(Step step) {
+		if(!projectDao.updateStepInCurrentProject(step)) {
+			throw new DbException("Step with ID= " + step.getStepId() + " does not exist.");
+		}
+		
+	}
+
+	public void deleteMaterialFromCurrentProject(Integer materialId) {
+		if(!projectDao.deleteMaterialFromCurrentProject(materialId)) {
+			throw new DbException("Material with ID= " + materialId + " does not exist.");
+		}
+		
+	}
+
+	public void deleteStepFromCurrentProject(Integer stepId) {
+		if(!projectDao.deleteStepFromCurrentProject(stepId)) {
+			throw new DbException("Step with ID= " + stepId + " does not exist.");
+		}
+	}
+
+	public void deleteCategoryFromCurrentProject(Integer projectId, Integer categoryId) {
+		if(!projectDao.deleteCategoryFromCurrentProject(projectId, categoryId)) {
+			throw new DbException(categoryId + " is not a category in Project ID= " + projectId );
+		}
+		
+	}
+
+	public List<Category> fetchCategoriesInAProject(Integer projectId) {
+		return projectDao.fetchCategoriesInAProject(projectId);
+	}
+
+	
 }

@@ -396,4 +396,203 @@ public class ProjectDao extends DaoBase{
 			throw new DbException(e);
 		}
 	}
+
+
+	public List<Material> fetchProjectMaterials(Integer projectId) {
+		try(Connection conn = DbConnection.getConnection()){
+			startTransaction(conn);
+			
+			try {
+				List<Material> materials = fetchMaterialsForProject(conn, projectId);
+				commitTransaction(conn);
+				
+				return materials;
+			}
+			catch(Exception e) {
+				throw new DbException(e);
+			}
+		}
+		catch(SQLException e) {
+			throw new DbException(e);
+		}
+	}
+
+
+	public boolean updateMaterialInSelectedProject(Material material) {
+		String sql = "UPDATE " + MATERIAL_TABLE + " SET material_name = ?, num_required = ?, cost = ? WHERE material_id = ?";
+		
+		try(Connection conn = DbConnection.getConnection()){
+			startTransaction(conn);
+			
+			try(PreparedStatement stmt = conn.prepareStatement(sql)){
+				setParameter(stmt, 1, material.getMaterialName(), String.class);
+				setParameter(stmt, 2, material.getNumRequired(), Integer.class);
+				setParameter(stmt, 3, material.getCost(), BigDecimal.class);
+				setParameter(stmt, 4, material.getMaterialId(), Integer.class);
+				
+				boolean updated = stmt.executeUpdate() == 1;
+				commitTransaction(conn);
+				
+				return updated;
+			}
+			catch(Exception e) {
+				rollbackTransaction(conn);
+				throw new DbException(e);
+			}
+		}
+		catch(SQLException e) {
+			throw new DbException(e);
+		}
+	}
+
+
+	public List<Step> fetchProjectSteps(Integer projectId) {
+		try(Connection conn = DbConnection.getConnection()){
+			startTransaction(conn);
+			
+			try {
+				List<Step> steps = fetchStepsForProject(conn, projectId);
+				commitTransaction(conn);
+				
+				return steps;
+				
+			}catch(Exception e) {
+				rollbackTransaction(conn);
+				throw new DbException(e);
+			}
+			
+		}catch(SQLException e) {
+			throw new DbException(e);
+		}
+	}
+
+
+	public boolean updateStepInCurrentProject(Step step) {
+		String sql = "UPDATE " + STEP_TABLE + " SET step_text = ? WHERE step_id = ?";
+		
+		try(Connection conn = DbConnection.getConnection()){
+			startTransaction(conn);
+			
+			try(PreparedStatement stmt = conn.prepareStatement(sql)){
+				setParameter(stmt, 1, step.getStepText(), String.class);
+				setParameter(stmt, 2, step.getStepId(), Integer.class);
+				
+				boolean updated = stmt.executeUpdate() == 1;
+				commitTransaction(conn);
+				
+				return updated;
+			}
+			catch(Exception e) {
+				rollbackTransaction(conn);
+				throw new DbException(e);
+			}
+			
+		}catch(SQLException e) {
+			throw new DbException(e);
+		}
+	}
+
+
+	public boolean deleteMaterialFromCurrentProject(Integer materialId) {
+		String sql = "DELETE FROM " + MATERIAL_TABLE + " WHERE material_id = ?";
+		
+		try(Connection conn = DbConnection.getConnection()){
+			startTransaction(conn);
+			
+			try(PreparedStatement stmt = conn.prepareStatement(sql)){
+				setParameter(stmt, 1, materialId, Integer.class);
+				
+				boolean deleted = stmt.executeUpdate() == 1;
+				
+				commitTransaction(conn);
+				return deleted;
+			}
+			catch(Exception e) {
+				throw new DbException(e);
+			}
+		}
+		catch(SQLException e) {
+			throw new DbException(e);
+		}
+	}
+
+
+	public boolean deleteStepFromCurrentProject(Integer stepId) {
+		String sql = "DELETE FROM " + STEP_TABLE + " WHERE step_id = ?";
+		
+		try(Connection conn = DbConnection.getConnection()){
+			startTransaction(conn);
+			
+			try(PreparedStatement stmt = conn.prepareStatement(sql)){
+				setParameter(stmt, 1, stepId, Integer.class);
+				
+				boolean deleted = stmt.executeUpdate() == 1;
+				
+				commitTransaction(conn);
+				return deleted;
+			}
+			catch(Exception e) {
+				throw new DbException(e);
+			}
+		}
+		catch(SQLException e) {
+			throw new DbException(e);
+		}
+	}
+
+
+	public boolean deleteCategoryFromCurrentProject(Integer projectId, Integer categoryId) {
+		String sql = "DELETE FROM " + PROJECT_CATEGORY_TABLE + " WHERE project_id = ? AND category_id = ?";
+		
+		try(Connection conn = DbConnection.getConnection()){
+			startTransaction(conn);
+			
+			try(PreparedStatement stmt = conn.prepareStatement(sql)){
+				setParameter(stmt, 1, projectId, Integer.class);
+				setParameter(stmt, 2, categoryId, Integer.class);
+				
+				boolean deleted = stmt.executeUpdate() == 1;
+				
+				commitTransaction(conn);
+				return deleted;				
+			}
+			catch(Exception e) {
+				throw new DbException(e);
+			}
+		}
+		catch(SQLException e) {
+			throw new DbException(e);
+		}
+	}
+
+
+	public List<Category> fetchCategoriesInAProject(Integer projectId) {
+		String sql = "SELECT * FROM " + CATEGORY_TABLE + " c JOIN " + PROJECT_CATEGORY_TABLE + " pc ON c.category_id = pc.category_id WHERE pc.project_id = ?";
+
+		try(Connection conn = DbConnection.getConnection()){
+			startTransaction(conn);
+			
+			try(PreparedStatement stmt = conn.prepareStatement(sql)){
+				setParameter(stmt, 1, projectId, Integer.class);
+				
+				try(ResultSet rs = stmt.executeQuery()){
+					List<Category> categories = new LinkedList<>();
+					
+					while(rs.next()) {
+						categories.add(extract(rs, Category.class));
+					}
+					
+					return categories;
+				}
+				
+			}
+			catch(Exception e) {
+				rollbackTransaction(conn);
+				throw new DbException(e);
+			}
+		}
+		catch(SQLException e) {
+			throw new DbException(e);
+		}
+	}
 }
